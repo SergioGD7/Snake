@@ -2,10 +2,10 @@
 "use client";
 
 import * as React from "react";
-import { Gamepad2, Play, Pause, RefreshCw, ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from "lucide-react";
+import { Gamepad2, Play, Pause, RefreshCw, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Trophy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import GameBoard from "@/components/game-board";
 import GameOverDialog from "@/components/game-over-dialog";
@@ -77,7 +77,7 @@ export default function Home() {
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4 md:p-8">
-      <div className="w-full max-w-4xl mx-auto flex flex-col lg:flex-row gap-8 items-center lg:items-start">
+      <div className="w-full max-w-4xl mx-auto flex flex-col lg:flex-row gap-8 items-center lg:items-stretch">
         <div className="w-full max-w-2xl">
           <header className="text-center mb-4">
             <h1 className="text-5xl font-bold tracking-tighter text-primary">Retro Snake</h1>
@@ -100,7 +100,7 @@ export default function Home() {
         </div>
 
         <div className="w-full lg:w-80 flex-shrink-0">
-          <Card className="shadow-lg">
+          <Card className="shadow-lg h-full flex flex-col">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Gamepad2 className="text-primary" />
@@ -110,7 +110,7 @@ export default function Home() {
                 Use the buttons or your keyboard.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+            <CardContent className="flex flex-col gap-4 flex-grow">
               <div className="flex items-center justify-center gap-4">
                 <Button onClick={isRunning ? pauseGame : startGame} size="lg" className="flex-1">
                   {isRunning ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
@@ -152,6 +152,12 @@ export default function Home() {
                 </Select>
               </div>
             </CardContent>
+            <CardFooter>
+                <Button variant="secondary" className="w-full" onClick={handleShowRanking} disabled={isRunning}>
+                    <Trophy className="mr-2 h-5 w-5" />
+                    Ranking
+                </Button>
+            </CardFooter>
           </Card>
         </div>
       </div>
