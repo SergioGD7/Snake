@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -16,7 +17,7 @@ const LEVELS: Record<Level, { speed: number; obstacles: Coordinates[] }> = {
     speed: 150,
     obstacles: [
       ...Array.from({ length: 10 }, (_, i) => ({ x: 5, y: i + 5 })),
-      ...Array.from({ length: 10 }, (_, i) => ({ x: 14, y: i + 5 })),
+      ...Array.from({ length: 10 }, (_, i) => ({ x: 24, y: i + 15 })),
     ],
   },
   hard: {
@@ -35,13 +36,13 @@ const LEVELS: Record<Level, { speed: number; obstacles: Coordinates[] }> = {
       ...Array.from({ length: BOARD_SIZE }, (_, i) => ({ x: i, y: BOARD_SIZE - 1 })),
       ...Array.from({ length: BOARD_SIZE }, (_, i) => ({ x: 0, y: i })),
       ...Array.from({ length: BOARD_SIZE }, (_, i) => ({ x: BOARD_SIZE - 1, y: i })),
-      ...Array.from({ length: 8 }, (_, i) => ({ x: i+6, y: 6 })),
-      ...Array.from({ length: 8 }, (_, i) => ({ x: i+6, y: 13 })),
+      ...Array.from({ length: 15 }, (_, i) => ({ x: i+8, y: 8 })),
+      ...Array.from({ length: 15 }, (_, i) => ({ x: i+8, y: 22 })),
     ]
   }
 };
 
-const INITIAL_SNAKE_POSITION = [{ x: 10, y: 10 }];
+const INITIAL_SNAKE_POSITION = [{ x: 15, y: 15 }];
 const INITIAL_DIRECTION: Direction = "RIGHT";
 
 // Custom hook for intervals
@@ -65,10 +66,25 @@ function useInterval(callback: () => void, delay: number | null) {
   }, [delay]);
 }
 
+const saveScore = (score: number) => {
+    if (typeof window === 'undefined') return;
+    try {
+        const scoresRaw = localStorage.getItem('snakeScores');
+        const scores = scoresRaw ? JSON.parse(scoresRaw) : [];
+        if (score > 0) {
+            scores.push(score);
+        }
+        scores.sort((a: number, b: number) => b - a);
+        localStorage.setItem('snakeScores', JSON.stringify(scores.slice(0, 10)));
+    } catch (e) {
+        console.error("Failed to save score:", e);
+    }
+};
+
 export const useGameLogic = (initialLevel: Level = "easy") => {
   const [level, setLevelState] = useState<Level>(initialLevel);
   const [snake, setSnake] = useState<Coordinates[]>(INITIAL_SNAKE_POSITION);
-  const [food, setFood] = useState<Coordinates>({ x: 15, y: 15 });
+  const [food, setFood] = useState<Coordinates>({ x: 20, y: 15 });
   const [direction, setDirection] = useState<Direction>(INITIAL_DIRECTION);
   const [speed, setSpeed] = useState<number | null>(LEVELS[level].speed);
   const [obstacles, setObstacles] = useState<Coordinates[]>(LEVELS[level].obstacles);
@@ -90,6 +106,7 @@ export const useGameLogic = (initialLevel: Level = "easy") => {
 
   const resetGame = useCallback((newLevel: Level) => {
     const levelConfig = LEVELS[newLevel];
+    setLevelState(newLevel);
     setSnake(INITIAL_SNAKE_POSITION);
     setDirection(INITIAL_DIRECTION);
     setObstacles(levelConfig.obstacles);
@@ -97,16 +114,19 @@ export const useGameLogic = (initialLevel: Level = "easy") => {
     setSpeed(levelConfig.speed);
     setScore(0);
     setGameOver(false);
-    setIsRunning(true);
+    setIsRunning(false);
   }, [generateFood]);
   
   const setLevel = (newLevel: Level) => {
-    setLevelState(newLevel);
     resetGame(newLevel);
   }
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const key = e.key;
+    if (key === ' ' && !isGameOver) {
+        e.preventDefault();
+        setIsRunning(prev => !prev);
+    }
     setDirection(prevDirection => {
       if ((key === "ArrowUp" || key.toLowerCase() === 'w') && prevDirection !== "DOWN") return "UP";
       if ((key === "ArrowDown" || key.toLowerCase() === 's') && prevDirection !== "UP") return "DOWN";
@@ -114,7 +134,7 @@ export const useGameLogic = (initialLevel: Level = "easy") => {
       if ((key === "ArrowRight" || key.toLowerCase() === 'd') && prevDirection !== "LEFT") return "RIGHT";
       return prevDirection;
     });
-  }, []);
+  }, [isGameOver]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -127,8 +147,7 @@ export const useGameLogic = (initialLevel: Level = "easy") => {
     if (!isRunning) return;
 
     setSnake(prevSnake => {
-      const newSnake = [...prevSnake];
-      const head = { ...newSnake[0] };
+      const head = { ...prevSnake[0] };
 
       switch (direction) {
         case "UP": head.y -= 1; break;
@@ -137,36 +156,22 @@ export const useGameLogic = (initialLevel: Level = "easy") => {
         case "RIGHT": head.x += 1; break;
       }
 
-      // Wall collision
-      if (head.x < 0 || head.x >= BOARD_SIZE || head.y < 0 || head.y >= BOARD_SIZE) {
+      const isCollision = 
+        head.x < 0 || head.x >= BOARD_SIZE || head.y < 0 || head.y >= BOARD_SIZE || // Wall collision
+        prevSnake.some(segment => segment.x === head.x && segment.y === head.y) || // Self collision
+        obstacles.some(obstacle => obstacle.x === head.x && obstacle.y === head.y); // Obstacle collision
+      
+      if (isCollision) {
         setGameOver(true);
         setIsRunning(false);
+        saveScore(score);
         return prevSnake;
       }
-      
-      // Self collision
-      for (const segment of newSnake) {
-        if (segment.x === head.x && segment.y === head.y) {
-          setGameOver(true);
-          setIsRunning(false);
-          return prevSnake;
-        }
-      }
 
-      // Obstacle collision
-      for (const obstacle of obstacles) {
-        if (obstacle.x === head.x && obstacle.y === head.y) {
-          setGameOver(true);
-          setIsRunning(false);
-          return prevSnake;
-        }
-      }
-
-      newSnake.unshift(head);
+      const newSnake = [head, ...prevSnake];
       
-      // Food consumption
       if (head.x === food.x && head.y === food.y) {
-        setScore(prev => prev + 10);
+        setScore(prev => prev + 10 * (Object.keys(LEVELS).indexOf(level) + 1));
         setFood(generateFood(newSnake, obstacles));
       } else {
         newSnake.pop();
@@ -174,18 +179,17 @@ export const useGameLogic = (initialLevel: Level = "easy") => {
 
       return newSnake;
     });
-  }, [direction, food.x, food.y, generateFood, isRunning, obstacles]);
+  }, [direction, food.x, food.y, generateFood, isRunning, obstacles, score, level]);
 
   useInterval(moveSnake, isRunning && !isGameOver ? speed : null);
 
   const startGame = () => {
-    if(!isGameOver) {
-      setIsRunning(true);
-    } else {
-      resetGame(level);
+    if (isGameOver) {
+        resetGame(level);
     }
+    setIsRunning(true);
   };
   const pauseGame = () => setIsRunning(false);
 
-  return { boardSize: BOARD_SIZE, snake, food, obstacles, score, level, setLevel, isGameOver, isRunning, startGame, pauseGame, resetGame, direction };
+  return { boardSize: BOARD_SIZE, snake, food, obstacles, score, level, setLevel, isGameOver, isRunning, startGame, pauseGame, resetGame, direction, speed };
 };

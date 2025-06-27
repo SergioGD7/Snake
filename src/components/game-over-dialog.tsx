@@ -1,8 +1,9 @@
+
 "use client";
 
 import {
   AlertDialog,
-  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -15,11 +16,13 @@ interface GameOverDialogProps {
   isOpen: boolean;
   score: number;
   onRestart: () => void;
+  onClose: () => void;
+  onShowRanking: () => void;
 }
 
-export default function GameOverDialog({ isOpen, score, onRestart }: GameOverDialogProps) {
+export default function GameOverDialog({ isOpen, score, onRestart, onClose, onShowRanking }: GameOverDialogProps) {
   return (
-    <AlertDialog open={isOpen}>
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Game Over!</AlertDialogTitle>
@@ -28,10 +31,12 @@ export default function GameOverDialog({ isOpen, score, onRestart }: GameOverDia
           </AlertDialogDescription>
           <p className="text-4xl font-bold text-center text-primary py-4">{score}</p>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogAction asChild>
+        <AlertDialogFooter className="flex-col sm:flex-row sm:justify-center gap-2">
             <Button onClick={onRestart} className="w-full">Play Again</Button>
-          </AlertDialogAction>
+            <Button onClick={onShowRanking} variant="secondary" className="w-full">Ranking</Button>
+            <AlertDialogCancel asChild>
+              <Button onClick={onClose} variant="outline" className="w-full">Close</Button>
+            </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

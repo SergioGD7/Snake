@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -8,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import GameBoard from "@/components/game-board";
 import GameOverDialog from "@/components/game-over-dialog";
+import RankingDialog from "@/components/ranking-dialog";
 import { useGameLogic, type Level } from "@/hooks/use-game-logic";
 
 export default function Home() {
@@ -25,19 +27,65 @@ export default function Home() {
     pauseGame,
     resetGame,
     direction,
+    speed,
   } = useGameLogic();
+
+  const [isGameOverDialog, setGameOverDialog] = React.useState(false);
+  const [showRanking, setShowRanking] = React.useState(false);
+  const [scores, setScores] = React.useState<number[]>([]);
+
+  const loadScores = React.useCallback(() => {
+    if (typeof window !== 'undefined') {
+        const savedScores = localStorage.getItem("snakeScores");
+        if (savedScores) {
+            setScores(JSON.parse(savedScores));
+        }
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadScores();
+  }, [loadScores]);
+
+  React.useEffect(() => {
+    if (isGameOver) {
+      setGameOverDialog(true);
+      loadScores(); 
+    }
+  }, [isGameOver, loadScores]);
+
+  const handleRestart = () => {
+    setGameOverDialog(false);
+    resetGame(level);
+    startGame();
+  };
+
+  const handleCloseGameOverDialog = () => {
+    setGameOverDialog(false);
+  };
+  
+  const handleShowRanking = () => {
+    loadScores();
+    setShowRanking(true);
+  }
+
+  const handleShowRankingFromGameOver = () => {
+      setGameOverDialog(false);
+      handleShowRanking();
+  };
+
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="w-full max-w-4xl mx-auto flex flex-col lg:flex-row gap-8 items-center lg:items-start">
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-2xl">
           <header className="text-center mb-4">
             <h1 className="text-5xl font-bold tracking-tighter text-primary">Retro Snake</h1>
             <p className="text-muted-foreground mt-2">A classic game for a new era.</p>
           </header>
 
           <Card className="relative overflow-hidden shadow-2xl">
-            <div className="absolute top-4 right-4 bg-primary/80 text-primary-foreground rounded-md px-3 py-1 text-sm font-semibold shadow-lg">
+            <div className="absolute top-4 right-4 bg-primary/80 text-primary-foreground rounded-md px-3 py-1 text-sm font-semibold shadow-lg z-20">
               Score: {score}
             </div>
             <GameBoard
@@ -46,6 +94,7 @@ export default function Home() {
               food={food}
               obstacles={obstacles}
               direction={direction}
+              speed={speed}
             />
           </Card>
         </div>
@@ -65,7 +114,7 @@ export default function Home() {
               <div className="flex items-center justify-center gap-4">
                 <Button onClick={isRunning ? pauseGame : startGame} size="lg" className="flex-1">
                   {isRunning ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
-                  {isRunning ? "Pause" : "Start"}
+                  {isRunning ? "Pause" : isGameOver ? "Restart" : "Start"}
                 </Button>
                 <Button onClick={() => resetGame(level)} variant="outline" size="lg">
                   <RefreshCw className="h-5 w-5" />
@@ -89,6 +138,7 @@ export default function Home() {
                 <Select
                   value={level}
                   onValueChange={(value: Level) => setLevel(value)}
+                  disabled={isRunning}
                 >
                   <SelectTrigger id="level-select" className="w-full">
                     <SelectValue placeholder="Select Level" />
@@ -107,9 +157,16 @@ export default function Home() {
       </div>
 
       <GameOverDialog
-        isOpen={isGameOver}
+        isOpen={isGameOverDialog}
         score={score}
-        onRestart={() => resetGame(level)}
+        onRestart={handleRestart}
+        onClose={handleCloseGameOverDialog}
+        onShowRanking={handleShowRankingFromGameOver}
+      />
+      <RankingDialog
+        isOpen={showRanking}
+        onClose={() => setShowRanking(false)}
+        scores={scores}
       />
     </main>
   );
