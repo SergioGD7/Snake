@@ -24,6 +24,7 @@ export default function Home() {
     startGame,
     pauseGame,
     resetGame,
+    direction,
   } = useGameLogic();
 
   return (
@@ -44,6 +45,7 @@ export default function Home() {
               snake={snake}
               food={food}
               obstacles={obstacles}
+              direction={direction}
             />
           </Card>
         </div>

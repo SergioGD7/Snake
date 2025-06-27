@@ -8,7 +8,7 @@ export type Coordinates = { x: number; y: number };
 export type Level = "easy" | "medium" | "hard" | "expert";
 
 // Constants
-const BOARD_SIZE = 20;
+const BOARD_SIZE = 30;
 
 const LEVELS: Record<Level, { speed: number; obstacles: Coordinates[] }> = {
   easy: { speed: 200, obstacles: [] },
@@ -187,5 +187,5 @@ export const useGameLogic = (initialLevel: Level = "easy") => {
   };
   const pauseGame = () => setIsRunning(false);
 
-  return { boardSize: BOARD_SIZE, snake, food, obstacles, score, level, setLevel, isGameOver, isRunning, startGame, pauseGame, resetGame };
+  return { boardSize: BOARD_SIZE, snake, food, obstacles, score, level, setLevel, isGameOver, isRunning, startGame, pauseGame, resetGame, direction };
 };
